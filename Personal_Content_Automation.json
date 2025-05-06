@@ -1,0 +1,409 @@
+{
+  "name": "Personal Content Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -440,
+        380
+      ],
+      "id": "57d063ad-210b-4441-bd63-056c879e8a74",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "19rYZWyMnNIwV7m7VyEUEieqvJ2IkKOWGuiPKdL2kRtM",
+          "mode": "list",
+          "cachedResultName": "Social Media Publisher",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19rYZWyMnNIwV7m7VyEUEieqvJ2IkKOWGuiPKdL2kRtM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19rYZWyMnNIwV7m7VyEUEieqvJ2IkKOWGuiPKdL2kRtM/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Ready to Post"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -220,
+        380
+      ],
+      "id": "4b73ff12-47ae-4ab1-8e22-d1815bed787d",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "n4WCId0BxYkUyFQk",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"blotato_api_key\": \"\",\n  \"instagram_id\": \"\",\n  \"youtube_id\": \"\",\n  \"tiktok_id\": \"\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        380
+      ],
+      "id": "0fa519b3-2589-4d58-908b-cf177a0d8de2",
+      "name": "Setup Social Accounts"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1750d20-2f6e-4826-80b8-654d0985120d",
+              "name": "final_google_drive_url",
+              "value": "={{ $('Google Sheets').item.json['Video URL (google drive)'].match(/\\/d\\/([A-Za-z0-9_-]+)/i)[1] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        380
+      ],
+      "id": "0103a69f-c61a-447b-9d6b-6e0975d94c9b",
+      "name": "Get Google Drive ID"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://backend.blotato.com/v2/media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "blotato-api-key",
+              "value": "={{ $('Setup Social Accounts').item.json.blotato_api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "=https://drive.google.com/uc?export=download&id={{ $('Get Google Drive ID').item.json.final_google_drive_url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        380
+      ],
+      "id": "6c0083a7-b1fb-4772-acf9-850fa5cbacef",
+      "name": "Upload to Blotato"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://backend.blotato.com/v2/posts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "blotato-api-key",
+              "value": "={{ $('Setup Social Accounts').item.json.blotato_api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"post\": {\n    \"target\": {\n      \"targetType\": \"instagram\"\n    },\n    \"content\": {\n      \"text\": {{ $('Google Sheets').item.json.Caption.toJsonString() }},\n      \"platform\": \"instagram\",\n      \"mediaUrls\": [\"{{ $json.url }}\"]\n    },\n    \"accountId\": \"{{ $('Setup Social Accounts').item.json.instagram_id }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        380
+      ],
+      "id": "44c63dee-3da1-430a-9861-e09cc5c140fd",
+      "name": "[Instagram] Publish via Blotato",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://backend.blotato.com/v2/posts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "blotato-api-key",
+              "value": "={{ $('Setup Social Accounts').item.json.blotato_api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"post\": {\n    \"target\": {\n      \"targetType\": \"tiktok\",\n      \"isYourBrand\": false,\n      \"disabledDuet\": false,\n      \"privacyLevel\": \"PUBLIC_TO_EVERYONE\",\n      \"isAiGenerated\": false,\n      \"disabledStitch\": false,\n      \"disabledComments\": false,\n      \"isBrandedContent\": false\n    },\n    \"content\": {\n      \"text\": {{ $('Google Sheets').item.json.Caption.toJsonString() }},\n      \"platform\": \"tiktok\",\n      \"mediaUrls\": [\"{{ $json.url }}\"]\n    },\n    \"accountId\": \"{{ $('Setup Social Accounts').item.json.tiktok_id }}\"\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        580
+      ],
+      "id": "0a30eec1-2be3-4b22-a605-728c42b04c93",
+      "name": "[Tiktok] Publish via Blotato",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://backend.blotato.com/v2/posts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "blotato-api-key",
+              "value": "={{ $('Setup Social Accounts').item.json.blotato_api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"post\": {\n    \"target\": {\n      \"targetType\": \"youtube\",\n      \"title\": \"Sample\",\n      \"privacyStatus\": \"public\",\n      \"shouldNotifySubscribers\": true\n    },\n    \"content\": {\n      \"text\": {{ $('Google Sheets').item.json.Caption.toJsonString() }},\n      \"platform\": \"youtube\",\n      \"mediaUrls\": [\"{{ $json.url }}\"]\n    },\n    \"accountId\": \"{{ $('Setup Social Accounts').item.json.youtube_id }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        180
+      ],
+      "id": "241265bc-1528-44c8-a916-67c059f2ba35",
+      "name": "[Youtube] Publish via Blotato",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "Video requirements: \n\n☐ PUBLIC \n☐ .MP4\n☐ *READY TO POST*",
+        "height": 120,
+        "width": 160,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        260
+      ],
+      "id": "ca95913b-6f4e-49e2-a118-42ceb1ad5987",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "This will only post when entire automation is ACTIVE",
+        "height": 100,
+        "width": 160,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        280
+      ],
+      "id": "9c2bd39c-58c5-418c-a67e-157e945cf4f0",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Connect your BLOTATO and Social Media here!\n\n☐ YouTube\n☐ Instagram\n☐ TikTok",
+        "width": 160,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        200,
+        220
+      ],
+      "id": "f467fc76-a299-4682-a605-c44e5efcfeb9",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "Ensure that this is GREEN\n",
+        "height": 80,
+        "width": 160,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        300
+      ],
+      "id": "dcfb4be0-bb98-4291-a2b2-bee627194831",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Connect your BLOTATO and Social Media here!\n\n☐ YouTube\n☐ Instagram\n☐ TikTok",
+        "width": 160,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        440,
+        220
+      ],
+      "id": "be33d676-e07d-4b8d-9bc3-63aec4b6cafe",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "Be sure to test just one at a time!",
+        "height": 80,
+        "width": 160,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        860,
+        400
+      ],
+      "id": "d4af0642-c25e-4f5e-98f5-705395805b9b",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "For YouTube, you have to change the title of the post manually",
+        "height": 100,
+        "width": 160,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        640,
+        60
+      ],
+      "id": "ed0b4f1b-d334-4e52-a75d-a3e284968366",
+      "name": "Sticky Note6"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Get Google Drive ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Setup Social Accounts": {
+      "main": [
+        [
+          {
+            "node": "Upload to Blotato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Blotato": {
+      "main": [
+        [
+          {
+            "node": "[Instagram] Publish via Blotato",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "[Tiktok] Publish via Blotato",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "[Youtube] Publish via Blotato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Google Drive ID": {
+      "main": [
+        [
+          {
+            "node": "Setup Social Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2ede1732-97c8-48eb-a208-ede18777feb3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ca07387fbab7d560023b2fe49e02934f1e481122d2664367bf4d417347341a77"
+  },
+  "id": "UEQdI3pF8Sp2CSPf",
+  "tags": []
+}
